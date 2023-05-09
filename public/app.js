@@ -75,7 +75,7 @@ async function createRoom() {
 
 
   // Code for joining a room/session below
-  const offer = roomSnapshot.data().offer;
+  // const offer = roomSnapshot.data().offer;
   await peerConnection.setRemoteDescription(offer);
   const answer = await peerConnection.createAnswer();
   await peerConnection.setLocalDescription(answer);
@@ -87,15 +87,39 @@ async function createRoom() {
       }
   }
   await roomRef.update(roomWithAnswer);
-
-  // Code for joining a room/session above
+  /* In the code above, we start by extracting the offer from the caller and creating a RTCSessionDescription that we set as the remote description.
+  Next, we create the answer, set it as the local description, and update the database.
+  The update of the database will trigger the onSnapshot callback on the caller side,
+  which in turn will set the remote description based on the answer from the callee.
+  This completes the exchange of the RTCSessionDescription objects between the caller and the callee. */
 
 
 
   
   // Code for collecting ICE candidates below
+  async function collectIceCandidates(roomRef, peerConnection, localName, remoteName) {
+    const candidatesCollection = roomRef.collection(localName);
 
-  // Code for collecting ICE candidates above
+    peerConnection.addEventListener('icecandidate', event -> {
+      if (event.candidate) {
+        const json = event.candidate.toJSON();
+        candidatesCollection.add(json);
+      }
+    });
+
+    roomRef.collection(remoteName).onSnapshot(snapshot -> {
+      snapshot.docChanges().forEach(change -> {
+        if (change.type === "added") {
+          const candidate = new RTCIceCandidate(change.doc.data());
+          peerConnection.addIceCandidate(candidate);
+        } 
+      });
+    })
+  }
+  /* This function does two things. It collects ICE candidates from the WebRTC API and adds them to the database,
+  and listens for added ICE candidates from the remote peer and adds them to its RTCPeerConnection instance.
+  It is important when listening to database changes to filter out anything that isn't a new addition,
+  since we otherwise would have added the same set of ICE candidates over and over again. */
 
   peerConnection.addEventListener('track', event => {
     console.log('Got remote track:', event.streams[0]);
