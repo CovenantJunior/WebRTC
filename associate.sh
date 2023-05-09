@@ -1,0 +1,1 @@
+sh firebase use --add
