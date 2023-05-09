@@ -39,6 +39,8 @@ async function createRoom() {
 
   // Create a room/session
   const offer = await peerConnection.createOffer();
+  // Create an RTCSessionDescription that will represent the offer from the caller. This is then set as the local description, and finally written to the new room object in Cloud Firestore.
+
   await peerConnection.setLocalDescription(offer);
 
   const roomWithOffer = {
@@ -50,8 +52,20 @@ async function createRoom() {
   const roomRef = await db.collection('rooms').add(roomWithOffer);
   const roomId = roomRef.id;
   document.querySelector('#currentRoom').innerText = `Current room is ${roomId} - You are the caller!`
+
+
+  // Listen for changes to the database and detect when an answer from the callee has been added
+  roomRef.onSnapshot(async snapshot => {
+    console.log('Got updated room:', snapshot.data());
+    const data = snapshot.data();
+    if (!peerConnection.currentRemoteDescription && data.answer) {
+        console.log('Set remote description: ', data.answer);
+        const answer = new RTCSessionDescription(data.answer)
+        await peerConnection.setRemoteDescription(answer);
+    }
+  });
   
-  // Code for creating room above
+  // Code for creating room/session above
   
   localStream.getTracks().forEach(track => {
     peerConnection.addTrack(track, localStream);
