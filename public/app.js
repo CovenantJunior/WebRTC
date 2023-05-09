@@ -100,15 +100,15 @@ async function createRoom() {
   async function collectIceCandidates(roomRef, peerConnection, localName, remoteName) {
     const candidatesCollection = roomRef.collection(localName);
 
-    peerConnection.addEventListener('icecandidate', event -> {
+    peerConnection.addEventListener('icecandidate', event => {
       if (event.candidate) {
         const json = event.candidate.toJSON();
         candidatesCollection.add(json);
       }
     });
 
-    roomRef.collection(remoteName).onSnapshot(snapshot -> {
-      snapshot.docChanges().forEach(change -> {
+    roomRef.collection(remoteName).onSnapshot(snapshot => {
+      snapshot.docChanges().forEach(change => {
         if (change.type === "added") {
           const candidate = new RTCIceCandidate(change.doc.data());
           peerConnection.addIceCandidate(candidate);
