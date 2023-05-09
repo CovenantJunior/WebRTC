@@ -71,10 +71,28 @@ async function createRoom() {
     peerConnection.addTrack(track, localStream);
   });
 
-  // Code for creating a room below
 
-  // Code for creating a room above
 
+
+  // Code for joining a room/session below
+  const offer = roomSnapshot.data().offer;
+  await peerConnection.setRemoteDescription(offer);
+  const answer = await peerConnection.createAnswer();
+  await peerConnection.setLocalDescription(answer);
+
+  const roomWithAnswer = {
+      answer: {
+          type: answer.type,
+          sdp: answer.sdp
+      }
+  }
+  await roomRef.update(roomWithAnswer);
+
+  // Code for joining a room/session above
+
+
+
+  
   // Code for collecting ICE candidates below
 
   // Code for collecting ICE candidates above
